@@ -4,10 +4,10 @@ TOOL.Command		= nil
 TOOL.ConfigName		= ""
 
 if CLIENT then
-    language.Add( "tool.multi_parent.name", "Multi-Parent Tool" )
-    language.Add( "tool.multi_parent.listname", "Multi-Parent" )
-    language.Add( "tool.multi_parent.desc", "Parent multiple props to one prop." )
-    language.Add( "tool.multi_parent.0", "Primary: Select a prop. (Shift to select all, Use to area select) Secondary: Parent all selected entities to prop. Reload: Clear Targets." )
+	language.Add( "tool.multi_parent.name", "Multi-Parent Tool" )
+	language.Add( "tool.multi_parent.listname", "Multi-Parent" )
+	language.Add( "tool.multi_parent.desc", "Parent multiple props to one prop." )
+	language.Add( "tool.multi_parent.0", "Primary: Select a prop. (Shift to select all, Use to area select) Secondary: Parent all selected entities to prop. Reload: Clear Targets." )
 	language.Add( "tool.multi_parent.removeconstraints", "Remove Constraints" )
 	language.Add( "tool.multi_parent.nocollide", "No Collide" )
 	language.Add( "tool.multi_parent.weld", "Weld" )
@@ -15,7 +15,7 @@ if CLIENT then
 	language.Add( "tool.multi_parent.weight", "Set weight" )
 	language.Add( "tool.multi_parent.disableshadow", "Disable Shadows" )
 	language.Add( "tool.multi_parent.removeconstraints.help", "Remove all constraints before parenting (cannot be undone!)." )
-	language.Add( "tool.multi_parent.nocollide.help", "Checking this creates a no collide constraint between the entity and parent. Unchecking will save on constraints (read: lag) but you will have to area-copy to duplicate your contraption." )
+	language.Add( "tool.multi_parent.nocollide.help", "Checking this creates a no collide constraint between the entity and parent. Unchecking will save on constraints (read: lag).")
 	language.Add( "tool.multi_parent.weld.help", "Checking this creates a weld between the entity and parent. This will retain the physics on parented props and you will still be able to physgun them, but it will cause more lag (not recommended)." )
 	language.Add( "tool.multi_parent.disablecollisions.help", "Disable all collisions before parenting. Useful for props that are purely for visual effect." )
 	language.Add( "tool.multi_parent.weight.help", "Checking this will set the entity's weight to 0.1 before parenting. Useful for props that are purely for visual effect." )
