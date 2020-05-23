@@ -4,23 +4,19 @@ hook.Add("Initialize", "Multi-Parent", function()
 
 
 	function ENT:SetParent( Parent, Attachment )
+		local OldParent     = self:GetParent()
+		local OldAttachment = self:GetParentAttachment()
 
-		local OldParent = self:GetParent()
-
-		if Parent == OldParent and self:GetParentAttachment() == Attachment then return end -- Don't re-parent to the same thing that's just a waste of time
+		if Parent == OldParent and OldAttachment == Attachment then return end -- Don't re-parent to the same thing that's just a waste of time
 
 		SetParent(self, Parent, Attachment)
 
-		if IsValid(OldParent) and OldParent ~= Parent then -- Parent target has changed
-			if OldParent._children then -- This should always be true... But just in case
+		if IsValid(OldParent) and OldParent ~= Parent and OldParent._children then -- Parent target has changed
 				OldParent._children[self] = nil
 
-				if not next(OldParent._children) then -- Remove the table if empty
-					OldParent._children = nil
-				end
+			if not next(OldParent._children) then -- Remove the table if empty
+				OldParent._children = nil
 			end
-
-			self:RemoveCallOnRemove("UnparentOnRemove") -- Cleaning up after ourselves
 		end
 
 		if IsValid(Parent) then -- Parenting to a new entity
@@ -30,8 +26,13 @@ hook.Add("Initialize", "Multi-Parent", function()
 			self:CallOnRemove("UnparentOnRemove", function( Ent ) -- Have entities unparent when getting removed
 				SetParent(Ent, nil)
 			end)
-		end
 
+			hook.Run("OnEntityParented", self, Parent, Attachment, OldParent)
+		else
+			self:RemoveCallOnRemove("UnparentOnRemove") -- Cleaning up after ourselves
+
+			hook.Run("OnEntityUnparented", self, OldParent, OldAttachment)
+		end
 	end
 
 	function ENT:GetChildren()
