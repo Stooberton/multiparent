@@ -18,7 +18,7 @@ if CLIENT then
 	language.Add( "tool.multi_parent.nocollide.help", "Checking this creates a no collide constraint between the entity and parent. Unchecking will save on constraints (read: lag).")
 	language.Add( "tool.multi_parent.weld.help", "Checking this creates a weld between the entity and parent. This will retain the physics on parented props and you will still be able to physgun them, but it will cause more lag (not recommended)." )
 	language.Add( "tool.multi_parent.disablecollisions.help", "Disable all collisions before parenting. Useful for props that are purely for visual effect." )
-	language.Add( "tool.multi_parent.weight.help", "Checking this will set the entity's weight to 0.1 before parenting. Useful for props that are purely for visual effect." )
+	language.Add( "tool.multi_parent.weight.help", "Checking this will set the entity's weight to whatever the slider is set to above before parenting. Useful for props that are purely for visual effect." )
 	language.Add( "tool.multi_parent.disableshadow.help", "Disables shadows for parented entities." )
 	language.Add( "Undone_Multi-Parent", "Undone Multi-Parent" )
 end
@@ -28,6 +28,7 @@ TOOL.ClientConVar[ "nocollide" ] = "0"
 TOOL.ClientConVar[ "disablecollisions" ] = "0"
 TOOL.ClientConVar[ "weld" ] = "0"
 TOOL.ClientConVar[ "weight" ] = "0"
+TOOL.ClientConVar[ "mass" ] = "0.01"
 TOOL.ClientConVar[ "radius" ] = "512"
 TOOL.ClientConVar[ "disableshadow" ] = "0"
 
@@ -38,6 +39,13 @@ function TOOL.BuildCPanel( panel )
 		Min = "64",
 		Max = "1024",
 		Command = "multi_parent_radius"
+	} )
+	panel:AddControl("Slider", {
+		Label = "Set Mass:",
+		Type = "float",
+		Min = "0.01",
+		Max = "50000",
+		Command = "multi_parent_mass"
 	} )
 	panel:AddControl( "Checkbox", {
 		Label = "#tool.multi_parent.removeconstraints",
@@ -176,6 +184,7 @@ function TOOL:RightClick( trace )
 	local _weld = tobool( self:GetClientNumber( "weld" ) )
 	local _removeconstraints = tobool( self:GetClientNumber( "removeconstraints" ) )
 	local _weight = tobool( self:GetClientNumber( "weight" ) )
+	local _mass = math.Clamp(self:GetClientNumber("mass"), 0.01, 50000)
 	local _disableshadow = tobool( self:GetClientNumber( "disableshadow" ) )
 
 	local ent = trace.Entity
@@ -209,8 +218,8 @@ function TOOL:RightClick( trace )
 
 				if _weight then
 					data.Mass = phys:GetMass()
-					phys:SetMass( 0.1 )
-					duplicator.StoreEntityModifier( prop, "mass", { Mass = 0.1 } )
+					phys:SetMass( _mass )
+					duplicator.StoreEntityModifier( prop, "mass", { Mass = _mass } )
 				end
 
 				if _disableshadow then
