@@ -1,35 +1,40 @@
-----------------------------------------------------------------------------
--- This script overrides Entity.SetParent and adds a GetChildren function
--- which returns a table of all props that are parented to it.
-----------------------------------------------------------------------------
+hook.Add("Initialize", "Multi-Parent", function()
+	local ENT       = FindMetaTable( "Entity" )
+	local SetParent = ENT.SetParent
 
-if CLIENT then return end
 
-local meta = FindMetaTable( "Entity" )
+	function ENT:SetParent( Parent, Attachment )
 
-if not meta.SetParentEngine then meta.SetParentEngine = meta.SetParent end
+		local OldParent = self:GetParent()
 
-function meta:SetParent( parent, attachment )
-	
-	local oldparent = self:GetParent()
-	self:SetParentEngine( parent, attachment )
-	
-	-- If we're unparenting or changing parent, remove the ent from the previous parent's childtable
-	if IsValid( oldparent ) and oldparent ~= parent and oldparent._children then
-		oldparent._children[ self ] = nil
+		if Parent == OldParent and self:GetParentAttachment() == Attachment then return end -- Don't re-parent to the same thing that's just a waste of time
+
+		SetParent(self, Parent, Attachment)
+
+		if IsValid(OldParent) and OldParent ~= Parent then -- Parent target has changed
+			if OldParent._children then -- This should always be true... But just in case
+				OldParent._children[self] = nil
+
+				if not next(OldParent._children) then -- Remove the table if empty
+					OldParent._children = nil
+				end
+			end
+
+			self:RemoveCallOnRemove("UnparentOnRemove") -- Cleaning up after ourselves
+		end
+
+		if IsValid(Parent) then -- Parenting to a new entity
+			Parent._children = Parent._children or {}
+			Parent._children[self] = self -- Add to that entity's "children" table
+
+			self:CallOnRemove("UnparentOnRemove", function( Ent ) -- Have entities unparent when getting removed
+				SetParent(Ent, nil)
+			end)
+		end
+
 	end
-	
-	-- If we're parenting to a new/different ent, insert the ent into the parent's childtable
-	if IsValid( parent ) then
-		parent._children = parent._children or {}
-		parent._children[ self ] = self
-		self:CallOnRemove( "UnparentOnRemove", function( ent ) ent:SetParent( nil ) end )
-	end
-	
-end
 
-function meta:GetChildren()
-	
-	return self._children or {}
-	
-end
+	function ENT:GetChildren()
+		return self._children or {}
+	end
+end)
