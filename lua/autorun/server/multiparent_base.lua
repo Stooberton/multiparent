@@ -92,7 +92,6 @@ hook.Add("Initialize", "Multi-Parent", function()
 
 
 	function ENT:SetParent( Parent, Attachment)
-		print(self, Parent)
 		local OldParent     = self:GetParent()
 		local OldAttachment = self:GetParentAttachment()
 
