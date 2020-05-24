@@ -80,7 +80,7 @@ if SERVER then
 		local Radius = net.ReadUInt(10)
 
 		if not IsValid(Ent) then return end
-
+		if not IsPropOwner(Ply, Ent) then return end
 		if Ply:KeyDown(IN_SPEED) then -- Select family
 			local SelectedProps = 0
 			local Children = Ent:GetChildren()
