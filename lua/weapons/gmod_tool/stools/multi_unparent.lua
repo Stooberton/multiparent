@@ -9,7 +9,18 @@ if CLIENT then
 	language.Add( "tool.multi_unparent.name", "Multi-Unparent Tool" )
 	language.Add( "tool.multi_unparent.listname", "Multi-Unparent" )
 	language.Add( "tool.multi_unparent.desc", "Unparents multiple props." )
-	language.Add( "tool.multi_unparent.0", "Primary: Select a prop. Secondary: Unparent all selected entities. Reload: Clear Targets." )
+
+	TOOL.Information = {
+		{ name = "left_0", stage = 0, text = "Select an entity to be unparented" },
+		{ name = "right_0", stage = 0, text = "Unparent selected entities" },
+		{ name = "left_use_0", stage = 0, text = "Select everything in the area", icon2 = "gui/e.png"},
+		{ name = "left_shift_0", stage = 0, text = "Select the children of the target entity", icon2 = "gui/sprint.png"},
+		{ name = "reload_0", stage = 0, text = "De-select all entities"},
+	}
+
+	for _, V in pairs(TOOL.Information) do
+		language.Add("Tool.multi_unparent." .. V.name, V.text)
+	end
 
 	local function Select() -- runs a trace on the client rather than the server so that it will reliably hit parented entities
 		local tr = util.TraceLine( util.GetPlayerTrace(LocalPlayer()) )
