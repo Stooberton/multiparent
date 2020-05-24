@@ -13,17 +13,22 @@ if CLIENT then
 
 	local function Select() -- runs a trace on the client rather than the server so that it will reliably hit parented entities
 		local tr = util.TraceLine( util.GetPlayerTrace(LocalPlayer()) )
-		RunConsoleCommand( "unparent_select", tr.Entity:EntIndex() )
+
+		net.Start("unparent_select")
+			net.WriteEntity(tr.Entity)
+			net.WriteVector(tr.HitPos)
+			net.WriteUInt(net.ReadUInt(10), 10)
+		net.SendToServer()
 	end
 	net.Receive( "unparent_select", Select )
 end
 
 if SERVER then
-	util.AddNetworkString( "unparent_select" )
+	util.AddNetworkString("unparent_select")
 
-	local function UnparentSelect( ply, cmd, args )
-		local eid = args[1] or 0
-		local ent = Entity( eid )
+	local function Select( ply, ent )
+		local eid = ent:EntIndex()
+
 		if not IsValid( ent ) or ent:IsWorld() or ent:IsPlayer() then return end
 		local uid = ply:UserID()
 
@@ -42,14 +47,82 @@ if SERVER then
 			enttbl[eid] = nil
 		end
 	end
-	concommand.Add( "unparent_select", UnparentSelect )
+
+	local function IsPropOwner( ply, ent )
+		if CPPI then
+			return ent:CPPIGetOwner() == ply
+		else
+			for k, v in pairs( g_SBoxObjects ) do
+				for b, j in pairs( v ) do
+					for _, e in pairs( j ) do
+						if e == ent and k == ply:UniqueID() then return true end
+					end
+				end
+			end
+		end
+		return false
+	end
+
+	net.Receive("unparent_select", function(_, Ply)
+		local Ent = net.ReadEntity()
+		local Pos = net.ReadVector()
+		local Radius = net.ReadUInt(10)
+
+		if not IsValid(Ent) then return end
+
+		if Ply:KeyDown(IN_SPEED) then -- Select family
+			local SelectedProps = 0
+			local Children = Ent:GetChildren()
+				Children[Ent] = Ent
+
+			for k, v in pairs( Children ) do
+				if IsValid(v) and not plytbl[v:EntIndex()] and IsPropOwner( Ply, v ) then
+					Select(Ply, v)
+					SelectedProps = SelectedProps + 1
+				end
+			end
+
+			Ply:PrintMessage( HUD_PRINTTALK, "Multi-Unparent: " .. SelectedProps .. " props were selected." )
+		elseif Ply:KeyDown(IN_USE) then -- Select in radius
+			local SelectedProps = 0
+
+			for k, v in pairs( ents.FindInSphere( Pos, Radius ) ) do
+				if IsValid(v) and not plytbl[v:EntIndex()] and IsPropOwner( Ply, v ) then
+					Select(Ply, v)
+					SelectedProps = SelectedProps + 1
+				end
+			end
+
+			Ply:PrintMessage( HUD_PRINTTALK, "Multi-Unparent: " .. SelectedProps .. " props were selected." )
+		else
+			Select(Ply, Ent)
+		end
+	end)
 end
 
-function TOOL:LeftClick( trace )
+TOOL.ClientConVar["radius"] = "512"
+
+function TOOL.BuildCPanel( panel )
+	panel:AddControl("Slider", {
+		Label = "Auto Select Radius:",
+		Type = "integer",
+		Min = "64",
+		Max = "1024",
+		Command = "multi_unparent_radius"
+	} )
+end
+
+function TOOL:LeftClick( Trace )
+	local Ent = Trace.Entity
+
+	if not IsValid(Ent) then return false end
+	if Ent:IsWorld() then return false end
+
 	if CLIENT then return true end
 
-	net.Start( "unparent_select" )
-	net.Send( self:GetOwner() )
+	net.Start("unparent_select")
+		net.WriteUInt(math.Clamp(self:GetClientNumber("Radius"), 64, 1024), 10)
+	net.Send(self:GetOwner())
 
 	return true
 end
