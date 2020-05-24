@@ -7,7 +7,6 @@ if CLIENT then
 	language.Add( "tool.multi_parent.name", "Multi-Parent Tool" )
 	language.Add( "tool.multi_parent.listname", "Multi-Parent" )
 	language.Add( "tool.multi_parent.desc", "Parent multiple props to one prop." )
-	language.Add( "tool.multi_parent.0", "Primary: Select a prop. (Shift to select all, Use to area select) Secondary: Parent all selected entities to prop. Reload: Clear Targets." )
 	language.Add( "tool.multi_parent.removeconstraints", "Remove Constraints" )
 	language.Add( "tool.multi_parent.nocollide", "No Collide" )
 	language.Add( "tool.multi_parent.weld", "Weld" )
@@ -23,6 +22,20 @@ if CLIENT then
 	language.Add( "tool.multi_parent.disableshadow.help", "Disables shadows for parented entities." )
 	language.Add( "tool.multi_parent.ignoregate.help", "Ignores any parenting gates set on the target entity. Parenting gates will redirect parenting to themselves instead of the parenting gate's parent.")
 	language.Add( "Undone_Multi-Parent", "Undone Multi-Parent" )
+
+	TOOL.Information = {
+		{ name = "left_0", stage = 0, text = "Select an entity to be parented (Select a child)" },
+		{ name = "right_0", stage = 0, text = "Select an entity to parent to (Select a parent)" },
+		{ name = "left_use_0", stage = 0, text = "Select everything in the area", icon2 = "gui/e.png"},
+		{ name = "left_shift_0", stage = 0, text = "Select everything constrained to the target entity", icon2 = "gui/sprint.png"},
+		{ name = "right_use_0", stage = 0, text = "Select/De-select an entity to be used as a parenting gate", icon2 = "gui/e.png" },
+		{ name = "reload_0", stage = 0, text = "De-select all entities"},
+		{ name = "info_0", stage = 0, text = "Parent gates redirect all parents set on their parent to themselves instead" },
+	}
+
+	for _, V in pairs(TOOL.Information) do
+		language.Add("Tool.multi_parent." .. V.name, V.text)
+	end
 end
 
 TOOL.ClientConVar[ "removeconstraints" ] = "0"
@@ -221,7 +234,7 @@ function TOOL:RightClick( trace )
 	if trace.Entity:IsValid() and trace.Entity:IsPlayer() then return end
 	if SERVER and not util.IsValidPhysicsObject( trace.Entity, trace.PhysicsBone ) then return false end
 
-	if self:GetOwner():KeyDown(IN_SPEED) then -- Shift + Right
+	if self:GetOwner():KeyDown(IN_USE) then -- Shift + Right
 		if not IsWireModel(trace.Entity) then
 			self:GetOwner():PrintMessage(HUD_PRINTTALK, "Multi-Parent: Target is not a valid model.")
 			return false
