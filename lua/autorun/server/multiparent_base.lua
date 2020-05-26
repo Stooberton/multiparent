@@ -2,19 +2,6 @@ hook.Add("Initialize", "Multi-Parent", function()
 	local ENT 			= FindMetaTable("Entity")
 	local SetParent     = ENT.SetParent
 
-	local function AddChild(Ent, Parent)
-		Parent._children = Parent._children or {}
-		Parent._children[Ent] = Ent
-	end
-
-	local function RemoveChild(Ent, Parent)
-		Parent._children[Ent] = nil
-
-		if not next(Parent._children) then -- Remove the table if empty
-			Parent._children = nil
-		end
-	end
-
 	function ENT:SetParent(Parent, Attachment)
 		local OldParent     = self:GetParent()
 		local OldAttachment = self:GetParentAttachment()
@@ -24,12 +11,10 @@ hook.Add("Initialize", "Multi-Parent", function()
 		SetParent(self, Parent, Attachment)
 
 		if IsValid(OldParent) and OldParent ~= Parent and OldParent._children then -- Parent target has changed
-			RemoveChild(self, OldParent)
+			hook.Run("OnEntityUnparented", self, OldParent, OldAttachment)
 		end
 
 		if IsValid(Parent) then -- Parenting to a new entity
-			AddChild(self, Parent)
-
 			self:CallOnRemove("UnparentOnRemove", function( Ent ) -- Have entities unparent when getting removed
 				SetParent(Ent, nil)
 			end)
@@ -40,9 +25,5 @@ hook.Add("Initialize", "Multi-Parent", function()
 
 			hook.Run("OnEntityUnparented", self, OldParent, OldAttachment)
 		end
-	end
-
-	function ENT:GetChildren()
-		return self._children or {}
 	end
 end)
