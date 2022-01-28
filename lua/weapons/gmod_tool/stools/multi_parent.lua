@@ -13,24 +13,20 @@ if CLIENT then
 	language.Add( "tool.multi_parent.disablecollisions", "Disable Collisions" )
 	language.Add( "tool.multi_parent.weight", "Set weight" )
 	language.Add( "tool.multi_parent.disableshadow", "Disable Shadows" )
-	language.Add( "tool.multi_parent.ignoregate", "Ignore parenting gates")
 	language.Add( "tool.multi_parent.removeconstraints.help", "Remove all constraints before parenting (cannot be undone!)." )
 	language.Add( "tool.multi_parent.nocollide.help", "Creates a no collide constraint between the entity and parent.")
 	language.Add( "tool.multi_parent.weld.help", "Creates a weld between the entity and parent. This will retain the physics on parented props and you will still be able to physgun them." )
 	language.Add( "tool.multi_parent.disablecollisions.help", "Disable all collisions before parenting." )
 	language.Add( "tool.multi_parent.weight.help", "Checking this will set the entity's weight to whatever the slider is set to above." )
 	language.Add( "tool.multi_parent.disableshadow.help", "Disables shadows for parented entities." )
-	language.Add( "tool.multi_parent.ignoregate.help", "Ignores any parenting gates set on the target entity. Parenting gates will redirect parenting to themselves instead of the parenting gate's parent.")
 	language.Add( "Undone_Multi-Parent", "Undone Multi-Parent" )
 
 	TOOL.Information = {
 		{ name = "left_0", stage = 0, text = "Select an entity to be parented (Select a child)" },
 		{ name = "right_0", stage = 0, text = "Select an entity to parent to (Select a parent)" },
-		{ name = "left_use_0", stage = 0, text = "Select everything in the area", icon2 = "gui/e.png"},
-		{ name = "left_shift_0", stage = 0, text = "Select everything constrained to the target entity", icon2 = "gui/sprint.png"},
-		{ name = "right_use_0", stage = 0, text = "Select/De-select an entity to be used as a parenting gate", icon2 = "gui/e.png" },
+		{ name = "left_shift_0", stage = 0, text = "Select everything in the area", icon2 = "gui/e.png"},
+		{ name = "left_use_0", stage = 0, text = "Select everything constrained to the target entity", icon2 = "gui/sprint.png"},
 		{ name = "reload_0", stage = 0, text = "De-select all entities"},
-		{ name = "info_0", stage = 0, text = "Parent gates redirect all parents set on their parent to themselves instead" },
 	}
 
 	for _, V in pairs(TOOL.Information) do
@@ -46,42 +42,6 @@ TOOL.ClientConVar[ "weight" ] = "0"
 TOOL.ClientConVar[ "mass" ] = "0.01"
 TOOL.ClientConVar[ "radius" ] = "512"
 TOOL.ClientConVar[ "disableshadow" ] = "0"
-TOOL.ClientConVar[ "ignoregate" ] = "0"
-
-local VALIDPATHS = { -- These wire models fix the parent-trace issue for whatever reason
-	beer = true,
-	blacknecro = true,
-	bull = true,
-	--cheeze = true, Cheeze models don't seem to work
-	cyborgmatt = true,
-	["expression 2"] = true,
-	hammy = true,
-	holograms = true,
-	jaanus = true,
-	["killa-x"] = true,
-	kobilica = true,
-	venompapa = true,
-	wingf0x = true,
-	led = true,
-	led2 = true,
-	segment = true,
-	segment2 = true,
-	segment3 = true
-}
-
-local function IsWireModel(Ent)
-	local Path = string.Explode("/", Ent:GetModel())
-
-	return VALIDPATHS[Path[2]]
-end
-
-duplicator.RegisterEntityModifier("Parent-Gate", function(Ply, Entity, Args)
-	timer.Simple(0, function()
-		if IsValid(Entity) and IsValid(Entity:GetParent()) then
-			Entity:GetParent()._parentgate = Entity
-		end
-	end)
-end)
 
 function TOOL.BuildCPanel( panel )
 	panel:AddControl("Slider", {
@@ -128,11 +88,6 @@ function TOOL.BuildCPanel( panel )
 		Command = "multi_parent_disableshadow",
 		Help = true
 	} )
-	panel:AddControl("Checkbox", {
-		Label = "#tool.multi_parent.ignoregate",
-		Command = "multi_parent_ignoregate",
-		Help = true
-	})
 end
 
 TOOL.enttbl = {}
@@ -194,11 +149,11 @@ function TOOL:LeftClick( trace )
 
 	local ply = self:GetOwner()
 
-	if (not ply:KeyDown( IN_USE )) and trace.Entity:IsWorld() then return false end
+	if not ply:KeyDown( IN_USE ) and trace.Entity:IsWorld() then return false end
 
 	local ent = trace.Entity
 
-	if ply:KeyDown( IN_USE ) then -- Area select function
+	if ply:KeyDown( IN_SPEED ) then -- Area select function
 		local SelectedProps = 0
 		local Radius = math.Clamp( self:GetClientNumber( "radius" ), 64, 1024 )
 
@@ -210,7 +165,7 @@ function TOOL:LeftClick( trace )
 		end
 
 		ply:PrintMessage( HUD_PRINTTALK, "Multi-Parent: " .. SelectedProps .. " props were selected." )
-	elseif ply:KeyDown( IN_SPEED ) then -- Select all constrained entities
+	elseif ply:KeyDown( IN_USE ) then -- Select all constrained entities
 		local SelectedProps = 0
 
 		for k, v in pairs( constraint.GetAllConstrainedEntities( ent ) ) do
@@ -234,28 +189,8 @@ function TOOL:RightClick( trace )
 	if trace.Entity:IsValid() and trace.Entity:IsPlayer() then return end
 	if SERVER and not util.IsValidPhysicsObject( trace.Entity, trace.PhysicsBone ) then return false end
 
-	if self:GetOwner():KeyDown(IN_USE) then -- Shift + Right
-		if not IsWireModel(trace.Entity) then
-			self:GetOwner():PrintMessage(HUD_PRINTTALK, "Multi-Parent: Target is not a valid model.")
-			return false
-		end
-		if not IsValid(trace.Entity:GetParent()) then
-			self:GetOwner():PrintMessage(HUD_PRINTTALK, "Multi-Parent: Target has no parent.")
-			return false
-		end
-
-		if trace.Entity:GetParent()._parentgate == trace.Entity then
-			self:GetOwner():PrintMessage(HUD_PRINTTALK, "Multi-Parent: Parent gate removed.")
-			trace.Entity:GetParent()._parentgate = nil
-
-			duplicator.ClearEntityModifier(trace.Entity, "Parent-Gate")
-		else
-			self:GetOwner():PrintMessage(HUD_PRINTTALK, "Multi-Parent: Parent gate selected.")
-			trace.Entity:GetParent()._parentgate = trace.Entity
-
-			duplicator.StoreEntityModifier(trace.Entity, "Parent-Gate", {["Gate"] = true})
-		end
-	elseif table.Count( self.enttbl ) < 1 then return -- Nothing to parent
+	if table.Count( self.enttbl ) < 1 then
+		return -- Nothing to parent
 	else
 		local _nocollide = tobool( self:GetClientNumber( "nocollide" ) )
 		local _disablecollisions = tobool( self:GetClientNumber( "disablecollisions" ) )
